@@ -1,7 +1,7 @@
 require "./sdl/sdl"
 
 class Point
-  MAX_LIFE  = 200
+  MAX_LIFE  = 280
   HALF_LIFE = MAX_LIFE / 3
 
   property :x
@@ -21,7 +21,7 @@ class Point
   end
 
   def dead?
-    @life <= 0
+    @life <= 5
   end
 
   def revive
@@ -63,9 +63,9 @@ class Point
 end
 
 class MainPoint < Point
-  COUNT          = 6
-  MAX_TAIL_ANGLE = Math::PI / 3
-  TAIL_SPEED     = 0.35
+  COUNT          = 9
+  MAX_TAIL_ANGLE = Math::PI / 4
+  TAIL_SPEED     = 0.65
 
   def initialize(x, y, angle, speed, color_pattern)
     super
@@ -79,12 +79,12 @@ class MainPoint < Point
   end
 
   def turn_right
-    @angle -= 0.05
+    @angle -= 0.5
   end
 
   def speed_up
-    @speed += 0.06
-    @speed = 20_f64 if @speed >= 20
+    @speed += 0.6
+    @speed = 40_f64 if @speed >= 20
   end
 
   def speed_down
@@ -122,7 +122,7 @@ abstract class ColorPattern
   end
 
   def interpolate_half(life)
-    (life * 255.0 / Point::HALF_LIFE).to_i
+    (life * 127.0 / Point::HALF_LIFE).to_i
   end
 
   def interpolate_max(life)
@@ -171,7 +171,22 @@ class MagentaColorPattern < ColorPattern
 
   def interpolate(life)
     if life > Point::HALF_LIFE
-      r, g, b = interpolate_half(life), 0, 255
+      r, g, b = interpolate_half(life), 0, 127
+    else
+      r, g, b = 0, 0, interpolate_half(life)
+    end
+    make_color r, g, b
+  end
+end
+
+class BlueColorPattern < ColorPattern
+  def main
+    0xFF1B0E91
+  end
+
+  def interpolate(life)
+    if life > Point::HALF_LIFE
+      r, g, b = interpolate_half(life), 0, 127
     else
       r, g, b = 0, 0, interpolate_half(life)
     end
@@ -187,7 +202,7 @@ class RainbowColorPattern < ColorPattern
 
   def main
     main = @patterns[@index.to_i].main
-    @index += 0.05
+    @index += 0.35
     @index = 0.0 if @index.to_i >= @patterns.size
     main
   end
@@ -202,7 +217,7 @@ class RainbowColorPattern < ColorPattern
 end
 
 class Points
-  MAX = Point::MAX_LIFE * MainPoint::COUNT * 2
+  MAX = Point::MAX_LIFE * MainPoint::COUNT * 4
 
   def initialize
     @points = Array(Point).new(MAX)
@@ -302,9 +317,9 @@ class Screen
   end
 
   def intensity(color)
-    b = (color >> 24) % 256
+    b = (color >> 24) % 30
     g = (color >> 16) % 256
-    r = (color >> 8) % 256
+    r = (color >> 8) % 20
     r + g + b
   end
 end
@@ -317,27 +332,27 @@ def finish(start, frames)
   exit
 end
 
-width = 1024
+width = 1360
 height = 768
 point_count = ARGV.size > 0 ? ARGV[0].to_i : 4
 
 yellow = YellowColorPattern.new
-magenta = MagentaColorPattern.new
+magenta = BlueColorPattern.new
 cyan = CyanColorPattern.new
 rainbow = RainbowColorPattern.new [yellow, magenta, cyan]
 
 main_points = [] of MainPoint
-main_points << MainPoint.new(50, 50, -Math::PI / 8, 1.4, yellow)
-main_points << MainPoint.new(width - 50, height - 50, Math::PI - Math::PI / 8, 1.4, magenta) if point_count >= 2
-main_points << MainPoint.new(width - 50, 50, Math::PI + Math::PI / 8, 1.4, cyan) if point_count >= 3
-main_points << MainPoint.new(50, height - 50, Math::PI / 8, 1.4, rainbow) if point_count >= 4
+main_points << MainPoint.new(30, 30, -Math::PI / 17, 1.4, yellow)
+main_points << MainPoint.new(width - 30, height - 30, Math::PI - Math::PI / 8, 1.4, magenta) if point_count >= 2
+main_points << MainPoint.new(width - 30, 30, Math::PI + Math::PI / 8, 1.4, cyan) if point_count >= 3
+main_points << MainPoint.new(30, height - 30, Math::PI / 9, 1.4, rainbow) if point_count >= 4
 
 points = Points.new
 
 SDL.init
 SDL.hide_cursor
 
-surface = SDL.set_video_mode width, height, 32, LibSDL::DOUBLEBUF | LibSDL::HWSURFACE | LibSDL::ASYNCBLIT # | LibSDL::FULLSCREEN
+surface = SDL.set_video_mode width, height, 32, LibSDL::DOUBLEBUF | LibSDL::HWSURFACE | LibSDL::ASYNCBLIT | LibSDL::FULLSCREEN
 screen = Screen.new(surface)
 
 frames = 0_u32
@@ -466,5 +481,5 @@ while true
   surface.unlock
   surface.flip
 
-  frames += 1
+  frames += 2
 end
