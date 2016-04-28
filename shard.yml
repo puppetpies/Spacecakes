@@ -1,0 +1,9 @@
+name: spacecakes
+version: 0.1.0
+
+author:
+  - Brian Hood <brianh6854@googlemail.com>
+
+development_dependencies:
+  minitest:
+    github: ysbaddaden/minitest.cr
